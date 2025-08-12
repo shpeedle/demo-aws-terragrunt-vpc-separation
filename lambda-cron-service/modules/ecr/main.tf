@@ -1,6 +1,6 @@
 # Main cron service repository
 resource "aws_ecr_repository" "lambda_repo" {
-  name                 = "${var.environment}-lambda-cron-service"
+  name                 = "${var.environment}-${var.project_name}"
   image_tag_mutability = "MUTABLE"
 
   image_scanning_configuration {
@@ -12,14 +12,14 @@ resource "aws_ecr_repository" "lambda_repo" {
   }
 
   tags = {
-    Name        = "${var.environment}-lambda-cron-service"
+    Name        = "${var.environment}-${var.project_name}"
     Environment = var.environment
   }
 }
 
 # Worker lambda repository
 resource "aws_ecr_repository" "worker_repo" {
-  name                 = "${var.environment}-lambda-cron-worker"
+  name                 = "${var.environment}-${replace(var.project_name, "service", "worker")}"
   image_tag_mutability = "MUTABLE"
 
   image_scanning_configuration {
@@ -31,7 +31,7 @@ resource "aws_ecr_repository" "worker_repo" {
   }
 
   tags = {
-    Name        = "${var.environment}-lambda-cron-worker"
+    Name        = "${var.environment}-${replace(var.project_name, "service", "worker")}"
     Environment = var.environment
   }
 }

@@ -1,7 +1,7 @@
 data "aws_caller_identity" "current" {}
 
 resource "aws_iam_role" "lambda_role" {
-  name = "${var.environment}-lambda-cron-role"
+  name = "${var.environment}-${var.project_name}-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -30,7 +30,7 @@ resource "aws_iam_role_policy_attachment" "lambda_vpc" {
 
 resource "aws_security_group" "lambda_sg" {
   count       = var.vpc_config != null ? 1 : 0
-  name        = "${var.environment}-lambda-cron-sg"
+  name        = "${var.environment}-${var.project_name}-sg"
   description = "Security group for Lambda cron function"
   vpc_id      = var.vpc_config.vpc_id
 
@@ -42,14 +42,14 @@ resource "aws_security_group" "lambda_sg" {
   }
 
   tags = {
-    Name = "${var.environment}-lambda-cron-sg"
+    Name = "${var.environment}-${var.project_name}-sg"
   }
 }
 
 resource "aws_lambda_function" "main" {
   package_type     = "Image"
   image_uri        = var.image_uri
-  function_name    = "${var.environment}-lambda-cron-function"
+  function_name    = "${var.environment}-${var.project_name}-function"
   role            = aws_iam_role.lambda_role.arn
   timeout         = var.timeout
   memory_size     = var.memory_size
@@ -80,7 +80,7 @@ resource "aws_lambda_function" "main" {
 
 # EventBridge rule for hourly cron job
 resource "aws_cloudwatch_event_rule" "hourly_cron" {
-  name                = "${var.environment}-lambda-cron-hourly"
+  name                = "${var.environment}-${var.project_name}-hourly"
   description         = "Trigger lambda function every hour"
   schedule_expression = "rate(1 hour)"
 }
@@ -134,7 +134,7 @@ resource "aws_sqs_queue_redrive_policy" "work_queue_redrive" {
 resource "aws_lambda_function" "worker" {
   package_type     = "Image"
   image_uri        = var.worker_image_uri != null ? var.worker_image_uri : var.image_uri
-  function_name    = "${var.environment}-lambda-worker-function"
+  function_name    = "${var.environment}-${replace(var.project_name, "service", "worker")}-function"
   role            = aws_iam_role.worker_lambda_role.arn
   timeout         = var.worker_timeout != null ? var.worker_timeout : var.timeout
   memory_size     = var.worker_memory_size != null ? var.worker_memory_size : var.memory_size
@@ -165,7 +165,7 @@ resource "aws_lambda_function" "worker" {
 
 # IAM role for worker Lambda function
 resource "aws_iam_role" "worker_lambda_role" {
-  name = "${var.environment}-lambda-worker-role"
+  name = "${var.environment}-${replace(var.project_name, "service", "worker")}-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -203,7 +203,7 @@ resource "aws_lambda_event_source_mapping" "sqs_trigger" {
 
 # SQS permissions for both Lambda functions
 resource "aws_iam_role_policy" "sqs_permissions" {
-  name = "${var.environment}-lambda-sqs-policy"
+  name = "${var.environment}-${var.project_name}-sqs-policy"
   role = aws_iam_role.lambda_role.id
 
   policy = jsonencode({
@@ -226,7 +226,7 @@ resource "aws_iam_role_policy" "sqs_permissions" {
 
 # SQS permissions for worker Lambda function
 resource "aws_iam_role_policy" "worker_sqs_permissions" {
-  name = "${var.environment}-lambda-worker-sqs-policy"
+  name = "${var.environment}-${replace(var.project_name, "service", "worker")}-sqs-policy"
   role = aws_iam_role.worker_lambda_role.id
 
   policy = jsonencode({

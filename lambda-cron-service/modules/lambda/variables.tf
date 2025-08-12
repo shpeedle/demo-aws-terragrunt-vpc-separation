@@ -8,6 +8,11 @@ variable "aws_region" {
   type        = string
 }
 
+variable "project_name" {
+  description = "Project name used for resource naming"
+  type        = string
+}
+
 variable "timeout" {
   description = "Lambda function timeout in seconds"
   type        = number

@@ -1,3 +1,7 @@
+locals {
+  project_name = "lambda-cron-service"
+}
+
 terraform {}
 
 generate "provider" {
@@ -19,7 +23,7 @@ provider "aws" {
   default_tags {
     tags = {
       Environment   = var.environment
-      Project       = "lambda-cron-service"
+      Project       = "${local.project_name}"
       ManagedBy     = "terragrunt"
     }
   }
@@ -31,7 +35,7 @@ remote_state {
   backend = "s3"
   config = {
     bucket         = "terragrunt-state-10a905d3"
-    key            = "lambda-cron-service/${path_relative_to_include()}/terraform.tfstate"
+    key            = "${local.project_name}/${path_relative_to_include()}/terraform.tfstate"
     region         = "us-east-1"
     encrypt        = true
     dynamodb_table = "terragrunt-locks"
@@ -43,5 +47,6 @@ remote_state {
 }
 
 inputs = {
-  aws_region = "us-east-1"
+  aws_region   = "us-east-1"
+  project_name = local.project_name
 }
