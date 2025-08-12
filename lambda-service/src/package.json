@@ -1,0 +1,16 @@
+{
+  "name": "lambda-service",
+  "version": "1.0.0",
+  "description": "Simple Node.js Lambda function",
+  "main": "index.js",
+  "dependencies": {
+    "aws-sdk": "^2.1400.0",
+    "pg": "^8.11.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["lambda", "aws", "nodejs"],
+  "author": "",
+  "license": "MIT"
+}

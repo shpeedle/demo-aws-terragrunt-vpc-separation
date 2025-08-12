@@ -1,0 +1,16 @@
+{
+  "name": "lambda-cron-service",
+  "version": "1.0.0",
+  "description": "Node.js Lambda function for scheduled cron jobs",
+  "main": "index.js",
+  "dependencies": {
+    "aws-sdk": "^2.1400.0",
+    "pg": "^8.11.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["lambda", "aws", "nodejs", "cron", "scheduled"],
+  "author": "",
+  "license": "MIT"
+}
