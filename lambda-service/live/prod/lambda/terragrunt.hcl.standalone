@@ -1,0 +1,50 @@
+include "root" {
+  path = find_in_parent_folders("root.hcl")
+}
+
+terraform {
+  source = "../../../modules/lambda"
+}
+
+dependency "ecr" {
+  config_path = "../ecr"
+  
+  mock_outputs = {
+    repository_url = "123456789012.dkr.ecr.us-east-1.amazonaws.com/prod-lambda-service"
+  }
+  mock_outputs_allowed_terraform_commands = ["plan", "validate"]
+}
+
+inputs = {
+  environment = "prod"
+  
+  timeout     = 60
+  memory_size = 512
+  
+  # ECR image URI - this should be set after building and pushing the image
+  image_uri = "${dependency.ecr.outputs.repository_url}:latest"
+  
+  environment_variables = {
+    LOG_LEVEL   = "warn"
+    NODE_ENV    = "production"
+    ENVIRONMENT = "prod"
+    
+    # Database connection variables - HARDCODED from infrastructure repo
+    DB_HOST     = "prod-rds-instance.cluster-ghi789.us-east-1.rds.amazonaws.com"
+    DB_PORT     = "5432"
+    DB_NAME     = "proddb"
+    DB_USERNAME = "produser"
+    DB_PASSWORD = "change-me-prod-password"
+  }
+  
+  # VPC configuration - HARDCODED from infrastructure repo
+  vpc_config = {
+    vpc_id     = "vpc-0345678901cdef012"  # Production VPC ID
+    subnet_ids = [
+      "subnet-0345678901cdef012",         # Production Private Subnet 1
+      "subnet-0345678901cdef013"          # Production Private Subnet 2
+    ]
+  }
+  
+  create_api_gateway = true
+}

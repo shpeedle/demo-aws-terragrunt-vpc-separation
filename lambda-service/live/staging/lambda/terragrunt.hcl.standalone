@@ -1,0 +1,50 @@
+include "root" {
+  path = find_in_parent_folders("root.hcl")
+}
+
+terraform {
+  source = "../../../modules/lambda"
+}
+
+dependency "ecr" {
+  config_path = "../ecr"
+  
+  mock_outputs = {
+    repository_url = "123456789012.dkr.ecr.us-east-1.amazonaws.com/staging-lambda-service"
+  }
+  mock_outputs_allowed_terraform_commands = ["plan", "validate"]
+}
+
+inputs = {
+  environment = "staging"
+  
+  timeout     = 60
+  memory_size = 256
+  
+  # ECR image URI - this should be set after building and pushing the image
+  image_uri = "${dependency.ecr.outputs.repository_url}:latest"
+  
+  environment_variables = {
+    LOG_LEVEL   = "info"
+    NODE_ENV    = "production"
+    ENVIRONMENT = "staging"
+    
+    # Database connection variables - HARDCODED from infrastructure repo
+    DB_HOST     = "staging-rds-instance.cluster-def456.us-east-1.rds.amazonaws.com"
+    DB_PORT     = "5432"
+    DB_NAME     = "stagingdb"
+    DB_USERNAME = "staginguser"
+    DB_PASSWORD = "change-me-staging-password"
+  }
+  
+  # VPC configuration - HARDCODED from infrastructure repo
+  vpc_config = {
+    vpc_id     = "vpc-0234567890bcdef01"  # Staging VPC ID
+    subnet_ids = [
+      "subnet-0234567890bcdef01",         # Staging Private Subnet 1
+      "subnet-0234567890bcdef02"          # Staging Private Subnet 2
+    ]
+  }
+  
+  create_api_gateway = true
+}

@@ -1,0 +1,50 @@
+include "root" {
+  path = find_in_parent_folders("root.hcl")
+}
+
+terraform {
+  source = "../../../modules/lambda"
+}
+
+dependency "ecr" {
+  config_path = "../ecr"
+  
+  mock_outputs = {
+    repository_url = "123456789012.dkr.ecr.us-east-1.amazonaws.com/dev-lambda-service"
+  }
+  mock_outputs_allowed_terraform_commands = ["plan", "validate"]
+}
+
+inputs = {
+  environment = "dev"
+  
+  timeout     = 30
+  memory_size = 128
+  
+  # ECR image URI - this should be set after building and pushing the image
+  image_uri = "${dependency.ecr.outputs.repository_url}:latest"
+  
+  environment_variables = {
+    LOG_LEVEL   = "debug"
+    NODE_ENV    = "development"
+    ENVIRONMENT = "dev"
+    
+    # Database connection variables - HARDCODED from infrastructure repo
+    DB_HOST     = "dev-rds-instance.cluster-abc123.us-east-1.rds.amazonaws.com"
+    DB_PORT     = "5432"
+    DB_NAME     = "devdb"
+    DB_USERNAME = "devuser"
+    DB_PASSWORD = "change-me-dev-password"
+  }
+  
+  # VPC configuration - HARDCODED from infrastructure repo
+  vpc_config = {
+    vpc_id     = "vpc-0123456789abcdef0"  # Dev VPC ID
+    subnet_ids = [
+      "subnet-0123456789abcdef0",         # Dev Private Subnet 1
+      "subnet-0123456789abcdef1"          # Dev Private Subnet 2
+    ]
+  }
+  
+  create_api_gateway = true
+}
