@@ -1,0 +1,108 @@
+{
+  "Comment": "A data processing workflow using Lambda functions",
+  "StartAt": "ProcessData",
+  "States": {
+    "ProcessData": {
+      "Type": "Task",
+      "Resource": "${processor_function_arn}",
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.TaskFailed"],
+          "Next": "ProcessingFailed",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "ValidateData"
+    },
+    "ValidateData": {
+      "Type": "Task",
+      "Resource": "${validator_function_arn}",
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.TaskFailed"],
+          "Next": "ValidationFailed",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "CheckValidationResult"
+    },
+    "CheckValidationResult": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.isValid",
+          "BooleanEquals": true,
+          "Next": "SendSuccessNotification"
+        },
+        {
+          "Variable": "$.isValid",
+          "BooleanEquals": false,
+          "Next": "ValidationFailed"
+        }
+      ],
+      "Default": "ValidationFailed"
+    },
+    "SendSuccessNotification": {
+      "Type": "Task",
+      "Resource": "${notifier_function_arn}",
+      "Parameters": {
+        "status": "success",
+        "message": "Data processing completed successfully",
+        "data.$": "$"
+      },
+      "Next": "ProcessingComplete"
+    },
+    "ProcessingComplete": {
+      "Type": "Pass",
+      "Result": {
+        "status": "success",
+        "message": "Processing workflow completed successfully"
+      },
+      "End": true
+    },
+    "ProcessingFailed": {
+      "Type": "Task",
+      "Resource": "${notifier_function_arn}",
+      "Parameters": {
+        "status": "error",
+        "message": "Data processing failed",
+        "error.$": "$.error"
+      },
+      "Next": "WorkflowFailed"
+    },
+    "ValidationFailed": {
+      "Type": "Task",
+      "Resource": "${notifier_function_arn}",
+      "Parameters": {
+        "status": "error",
+        "message": "Data validation failed",
+        "data.$": "$"
+      },
+      "Next": "WorkflowFailed"
+    },
+    "WorkflowFailed": {
+      "Type": "Pass",
+      "Result": {
+        "status": "failed",
+        "message": "Processing workflow failed"
+      },
+      "End": true
+    }
+  }
+}
