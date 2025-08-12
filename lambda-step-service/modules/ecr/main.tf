@@ -13,39 +13,43 @@ resource "aws_ecr_repository" "lambda_step_functions" {
     encryption_type = "AES256"
   }
 
-  lifecycle_policy {
-    policy = jsonencode({
-      rules = [
-        {
-          rulePriority = 1
-          description  = "Expire untagged images older than 1 day"
-          selection = {
-            tagStatus   = "untagged"
-            countType   = "sinceImagePushed"
-            countUnit   = "days"
-            countNumber = 1
-          }
-          action = {
-            type = "expire"
-          }
-        },
-        {
-          rulePriority = 2
-          description  = "Keep last 10 images"
-          selection = {
-            tagStatus   = "any"
-            countType   = "imageCountMoreThan"
-            countNumber = 10
-          }
-          action = {
-            type = "expire"
-          }
-        }
-      ]
-    })
-  }
-
   tags = {
     Name = "${var.environment}-${each.key}"
   }
+}
+
+resource "aws_ecr_lifecycle_policy" "lambda_step_functions" {
+  for_each = toset(var.lambda_function_names)
+  
+  repository = aws_ecr_repository.lambda_step_functions[each.key].name
+
+  policy = jsonencode({
+    rules = [
+      {
+        rulePriority = 1
+        description  = "Expire untagged images older than 1 day"
+        selection = {
+          tagStatus   = "untagged"
+          countType   = "sinceImagePushed"
+          countUnit   = "days"
+          countNumber = 1
+        }
+        action = {
+          type = "expire"
+        }
+      },
+      {
+        rulePriority = 2
+        description  = "Keep last 10 images"
+        selection = {
+          tagStatus   = "any"
+          countType   = "imageCountMoreThan"
+          countNumber = 10
+        }
+        action = {
+          type = "expire"
+        }
+      }
+    ]
+  })
 }

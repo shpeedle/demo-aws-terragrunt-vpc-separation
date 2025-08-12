@@ -1,6 +1,8 @@
 const AWS = require('aws-sdk');
 const { Client } = require('pg');
 
+const sqs = new AWS.SQS();
+
 exports.handler = async (event, context) => {
     console.log('Cron job triggered at:', new Date().toISOString());
     console.log('Event:', JSON.stringify(event, null, 2));
@@ -39,10 +41,59 @@ exports.handler = async (event, context) => {
             )
         `);
         
-        // Simulate some cron job work (e.g., data cleanup, reporting, etc.)
+        // Simulate some cron job work and process work items
         const startTime = Date.now();
         
-        // Example: Clean up old health check records (older than 24 hours)
+        // Example work items to process (in real scenario, this could come from database, API, etc.)
+        const workItems = [
+            { id: 1, type: 'data_processing', payload: { userId: 123, action: 'update_profile' } },
+            { id: 2, type: 'email_notification', payload: { email: 'user@example.com', template: 'welcome' } },
+            { id: 3, type: 'data_cleanup', payload: { table: 'old_logs', days: 30 } },
+            { id: 4, type: 'report_generation', payload: { reportType: 'monthly', userId: 456 } },
+            { id: 5, type: 'backup_task', payload: { database: 'main', retention: 7 } }
+        ];
+        
+        // SQS Queue URL from environment variable
+        const queueUrl = process.env.SQS_QUEUE_URL;
+        
+        if (!queueUrl) {
+            throw new Error('SQS_QUEUE_URL environment variable is not set');
+        }
+        
+        // Process each work item by sending to SQS
+        const messagesSent = [];
+        for (const item of workItems) {
+            try {
+                const messageParams = {
+                    QueueUrl: queueUrl,
+                    MessageBody: JSON.stringify(item),
+                    MessageAttributes: {
+                        'workType': {
+                            DataType: 'String',
+                            StringValue: item.type
+                        },
+                        'workId': {
+                            DataType: 'Number',
+                            StringValue: item.id.toString()
+                        }
+                    }
+                };
+                
+                const result = await sqs.sendMessage(messageParams).promise();
+                messagesSent.push({
+                    workId: item.id,
+                    messageId: result.MessageId,
+                    type: item.type
+                });
+                
+                console.log(`Sent work item ${item.id} (${item.type}) to SQS: ${result.MessageId}`);
+            } catch (sqsError) {
+                console.error(`Failed to send work item ${item.id} to SQS:`, sqsError);
+                throw sqsError;
+            }
+        }
+        
+        // Example: Clean up old health check records (older than 24 hours) - existing cleanup logic
         await client.query(`
             CREATE TABLE IF NOT EXISTS health_check (
                 id SERIAL PRIMARY KEY,
@@ -65,8 +116,8 @@ exports.handler = async (event, context) => {
              VALUES ($1, $2, $3, $4)`,
             [
                 'success',
-                `Hourly cleanup job completed. Deleted ${deletedRecords} old health check records.`,
-                deletedRecords,
+                `Hourly cron job completed. Sent ${messagesSent.length} work items to SQS. Deleted ${deletedRecords} old health check records.`,
+                messagesSent.length + deletedRecords,
                 executionDuration
             ]
         );
@@ -78,6 +129,7 @@ exports.handler = async (event, context) => {
         
         dbResult = logResult.rows;
         processedData = {
+            messagesSent: messagesSent,
             recordsDeleted: deletedRecords,
             executionTimeMs: executionDuration,
             timestamp: new Date().toISOString()

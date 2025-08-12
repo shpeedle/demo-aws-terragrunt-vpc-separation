@@ -43,7 +43,19 @@ This project demonstrates a multi-environment AWS infrastructure setup using Ope
    ./scripts/bootstrap.sh
    ```
 
-2. **Deploy by environment (recommended):**
+2. **Initialize Terragrunt in all projects:**
+   ```bash
+   # Initialize infrastructure (VPC first, then RDS)
+   cd infrastructure && terragrunt init --all --queue-include-dir=live/dev/vpc --queue-include-dir=live/staging/vpc --queue-include-dir=live/prod/vpc
+   cd infrastructure && terragrunt init --all --queue-include-dir=live/dev/rds --queue-include-dir=live/staging/rds --queue-include-dir=live/prod/rds
+   
+   # Initialize lambda services
+   cd ../lambda-service && terragrunt init --all
+   cd ../lambda-cron-service && terragrunt init --all
+   cd ../lambda-step-service && terragrunt init --all
+   ```
+
+3. **Deploy by environment (recommended):**
    ```bash
    # Deploy Dev environment
    cd infrastructure/live/dev && terragrunt apply --all
@@ -64,7 +76,7 @@ This project demonstrates a multi-environment AWS infrastructure setup using Ope
    cd lambda-service/live/prod/lambda && terragrunt apply
    ```
 
-3. **Or deploy all at once:**
+4. **Or deploy all at once:**
    ```bash
    cd infrastructure && terragrunt apply --all
    cd ../lambda-service && find live -name ecr -type d -exec sh -c 'cd "$1" && terragrunt apply' _ {} \;

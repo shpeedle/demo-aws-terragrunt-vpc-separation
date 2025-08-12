@@ -7,11 +7,32 @@ include "root" {
 }
 
 dependency "vpc" {
-  config_path = "../../../infrastructure/live/dev/vpc"
+  config_path = "../../../../infrastructure/live/dev/vpc"
+  
+  mock_outputs = {
+    vpc_id              = "vpc-mock"
+    private_subnet_ids  = ["subnet-mock-1", "subnet-mock-2"]
+    vpc_cidr_block      = "10.0.0.0/16"
+  }
+  mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
 }
 
 dependency "ecr" {
   config_path = "../ecr"
+  
+  mock_outputs = {
+    repository_urls = {
+      "step-processor" = "123456789012.dkr.ecr.us-east-1.amazonaws.com/dev-step-processor"
+      "step-validator" = "123456789012.dkr.ecr.us-east-1.amazonaws.com/dev-step-validator"
+      "step-notifier"  = "123456789012.dkr.ecr.us-east-1.amazonaws.com/dev-step-notifier"
+    }
+    repository_arns = {
+      "step-processor" = "arn:aws:ecr:us-east-1:123456789012:repository/dev-step-processor"
+      "step-validator" = "arn:aws:ecr:us-east-1:123456789012:repository/dev-step-validator"
+      "step-notifier"  = "arn:aws:ecr:us-east-1:123456789012:repository/dev-step-notifier"
+    }
+  }
+  mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
 }
 
 inputs = {

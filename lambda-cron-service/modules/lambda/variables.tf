@@ -39,3 +39,27 @@ variable "image_uri" {
   description = "ECR image URI for Lambda function"
   type        = string
 }
+
+variable "worker_image_uri" {
+  description = "ECR image URI for worker Lambda function (optional, defaults to main image_uri)"
+  type        = string
+  default     = null
+}
+
+variable "worker_timeout" {
+  description = "Worker Lambda function timeout in seconds (optional, defaults to main timeout)"
+  type        = number
+  default     = null
+}
+
+variable "worker_memory_size" {
+  description = "Worker Lambda function memory size in MB (optional, defaults to main memory_size)"
+  type        = number
+  default     = null
+}
+
+variable "sqs_batch_size" {
+  description = "Number of messages to process in a batch from SQS"
+  type        = number
+  default     = 1
+}

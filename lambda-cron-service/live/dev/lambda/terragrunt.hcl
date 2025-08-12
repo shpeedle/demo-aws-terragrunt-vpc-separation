@@ -13,7 +13,7 @@ dependency "vpc" {
     vpc_id             = "vpc-mock"
     private_subnet_ids = ["subnet-mock-1", "subnet-mock-2"]
   }
-  mock_outputs_allowed_terraform_commands = ["plan", "validate"]
+  mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
 }
 
 dependency "ecr" {
@@ -21,8 +21,9 @@ dependency "ecr" {
   
   mock_outputs = {
     repository_url = "123456789012.dkr.ecr.us-east-1.amazonaws.com/dev-lambda-cron-service"
+    worker_repository_url = "123456789012.dkr.ecr.us-east-1.amazonaws.com/dev-lambda-cron-worker"
   }
-  mock_outputs_allowed_terraform_commands = ["plan", "validate"]
+  mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
 }
 
 dependency "rds" {
@@ -32,7 +33,7 @@ dependency "rds" {
     db_instance_address  = "mock-db-address"
     db_instance_port     = 5432
   }
-  mock_outputs_allowed_terraform_commands = ["plan", "validate"]
+  mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
 }
 
 inputs = {
@@ -41,8 +42,14 @@ inputs = {
   timeout     = 60
   memory_size = 256
   
-  # ECR image URI - this should be set after building and pushing the image
-  image_uri = "${dependency.ecr.outputs.repository_url}:latest"
+  # Worker configuration
+  worker_timeout     = 120
+  worker_memory_size = 512
+  sqs_batch_size     = 1
+  
+  # ECR image URIs - these should be set after building and pushing the images
+  image_uri        = "${dependency.ecr.outputs.repository_url}:latest"
+  worker_image_uri = "${dependency.ecr.outputs.worker_repository_url}:latest"
   
   environment_variables = {
     LOG_LEVEL   = "debug"

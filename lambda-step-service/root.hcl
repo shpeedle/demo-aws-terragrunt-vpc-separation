@@ -30,7 +30,7 @@ EOF
 remote_state {
   backend = "s3"
   config = {
-    bucket         = "terragrunt-state-bbccddce"
+    bucket         = "terragrunt-state-10a905d3"
     key            = "lambda-step-service/${path_relative_to_include()}/terraform.tfstate"
     region         = "us-east-1"
     encrypt        = true

@@ -51,7 +51,43 @@ echo "📦 S3 Bucket: $BUCKET_NAME"
 echo "🔒 DynamoDB Table: $TABLE_NAME"
 echo ""
 
-echo "✅ Configuration files are already configured!"
+# Update configuration files with the actual bucket name and region
+echo "📝 Updating configuration files..."
+
+# Function to update root.hcl files
+update_root_hcl() {
+    local file=$1
+    local project_name=$2
+    
+    if [ -f "$file" ]; then
+        echo "  Updating $file..."
+        # Create backup
+        cp "$file" "${file}.backup"
+        
+        # Update bucket name and region
+        sed -i "s/bucket.*=.*\".*\"/bucket         = \"$BUCKET_NAME\"/" "$file"
+        sed -i "s/region.*=.*\".*\"/region         = \"$REGION\"/" "$file"
+        sed -i "s/dynamodb_table.*=.*\".*\"/dynamodb_table = \"$TABLE_NAME\"/" "$file"
+        
+        # Update the inputs region as well
+        sed -i "s/aws_region.*=.*\".*\"/aws_region = \"$REGION\"/" "$file"
+        
+        echo "    ✅ Updated $file"
+    else
+        echo "    ⚠️  Warning: $file not found"
+    fi
+}
+
+# Go back to project root
+cd ..
+
+# Update all root.hcl files
+update_root_hcl "infrastructure/root.hcl" "infrastructure"
+update_root_hcl "lambda-service/root.hcl" "lambda-service"
+update_root_hcl "lambda-cron-service/root.hcl" "lambda-cron-service"
+update_root_hcl "lambda-step-service/root.hcl" "lambda-step-service"
+
+echo "✅ Configuration files updated successfully!"
 echo ""
 echo "🎉 Bootstrap complete! You can now run terragrunt commands."
 echo ""

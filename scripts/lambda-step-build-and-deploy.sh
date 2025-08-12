@@ -5,6 +5,14 @@
 
 set -e
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Get the project root directory (parent of scripts directory)
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+# Change to project root to ensure consistent paths
+cd "$PROJECT_ROOT"
+
 ENVIRONMENT=${1:-dev}
 IMAGE_TAG=${2:-latest}
 

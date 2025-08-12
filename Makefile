@@ -33,8 +33,20 @@ bootstrap: ## 🚀 Bootstrap initial AWS infrastructure (S3 bucket, DynamoDB tab
 	@echo "$(BLUE)🚀 Bootstrapping Terragrunt state management infrastructure...$(NC)"
 	@./scripts/bootstrap.sh
 
+.PHONY: init-all
+init-all: ## 🔧 Initialize Terragrunt in all projects
+	@echo "$(BLUE)🔧 Initializing Terragrunt in all projects...$(NC)"
+	@echo "$(YELLOW)Initializing infrastructure (VPC first, then RDS)...$(NC)"
+	@cd infrastructure && terragrunt init --all --queue-include-dir=live/dev/vpc --queue-include-dir=live/staging/vpc --queue-include-dir=live/prod/vpc
+	@cd infrastructure && terragrunt init --all --queue-include-dir=live/dev/rds --queue-include-dir=live/staging/rds --queue-include-dir=live/prod/rds
+	@echo "$(YELLOW)Initializing lambda services...$(NC)"
+	@cd lambda-service && terragrunt init --all
+	@cd lambda-cron-service && terragrunt init --all
+	@cd lambda-step-service && terragrunt init --all
+	@echo "$(GREEN)✅ All projects initialized$(NC)"
+
 .PHONY: setup
-setup: bootstrap ## 🔧 Complete setup: bootstrap + plan all infrastructure
+setup: bootstrap init-all ## 🔧 Complete setup: bootstrap + init + plan all infrastructure
 	@echo "$(BLUE)🔧 Running complete setup...$(NC)"
 	$(MAKE) plan-all
 

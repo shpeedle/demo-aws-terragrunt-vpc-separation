@@ -13,7 +13,7 @@ dependency "vpc" {
     vpc_id             = "vpc-mock"
     private_subnet_ids = ["subnet-mock-1", "subnet-mock-2"]
   }
-  mock_outputs_allowed_terraform_commands = ["plan", "validate"]
+  mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
 }
 
 dependency "ecr" {
@@ -22,7 +22,7 @@ dependency "ecr" {
   mock_outputs = {
     repository_url = "123456789012.dkr.ecr.us-east-1.amazonaws.com/staging-lambda-service"
   }
-  mock_outputs_allowed_terraform_commands = ["plan", "validate"]
+  mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
 }
 
 dependency "rds" {
@@ -32,7 +32,7 @@ dependency "rds" {
     db_instance_address  = "mock-db-address"
     db_instance_port     = 5432
   }
-  mock_outputs_allowed_terraform_commands = ["plan", "validate"]
+  mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
 }
 
 inputs = {
