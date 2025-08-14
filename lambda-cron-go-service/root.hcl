@@ -1,5 +1,12 @@
 locals {
   project_name = "lambda-cron-go-service"
+  
+  # Extract environment from the path (e.g., live/dev/lambda -> dev)
+  environment = regex("live/([^/]+)", path_relative_to_include())[0]
+  
+  # Get AWS account ID and region for dynamic naming
+  account_id = get_aws_account_id()
+  region     = get_aws_caller_identity_arn() != "" ? "us-east-1" : "us-east-1"  # fallback to us-east-1
 }
 
 terraform {}
@@ -34,11 +41,11 @@ EOF
 remote_state {
   backend = "s3"
   config = {
-    bucket         = "terragrunt-state-10a905d3"
+    bucket         = "terragrunt-state-${local.environment}-${local.account_id}-${local.region}"
     key            = "${local.project_name}/${path_relative_to_include()}/terraform.tfstate"
-    region         = "us-east-1"
+    region         = local.region
     encrypt        = true
-    dynamodb_table = "terragrunt-locks"
+    dynamodb_table = "terragrunt-locks-${local.environment}"
   }
   generate = {
     path      = "backend.tf"
@@ -47,6 +54,7 @@ remote_state {
 }
 
 inputs = {
-  aws_region   = "us-east-1"
+  aws_region   = local.region
   project_name = local.project_name
+  environment  = local.environment
 }
