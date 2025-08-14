@@ -20,8 +20,8 @@ dependency "ecr" {
   config_path = "../ecr"
   
   mock_outputs = {
-    repository_url = "123456789012.dkr.ecr.us-east-1.amazonaws.com/dev-lambda-cron-service"
-    worker_repository_url = "123456789012.dkr.ecr.us-east-1.amazonaws.com/dev-lambda-cron-worker"
+    repository_url = "123456789012.dkr.ecr.us-east-1.amazonaws.com/dev-lambda-cron-go-service"
+    worker_repository_url = "123456789012.dkr.ecr.us-east-1.amazonaws.com/dev-lambda-cron-go-worker"
   }
   mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
 }
@@ -59,7 +59,6 @@ inputs = {
   
   environment_variables = {
     LOG_LEVEL   = "debug"
-    NODE_ENV    = "development"
     ENVIRONMENT = "dev"
     
     # InfluxDB connection variables

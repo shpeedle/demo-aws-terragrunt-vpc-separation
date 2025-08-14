@@ -1,0 +1,25 @@
+# Build stage
+FROM golang:1.21-alpine AS builder
+
+WORKDIR /app/worker
+
+# Copy go mod and sum files
+COPY worker/go.mod worker/go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy source code
+COPY worker/main.go ./
+
+# Build the application
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o bootstrap main.go
+
+# Runtime stage
+FROM public.ecr.aws/lambda/provided:al2
+
+# Copy the binary from builder stage as bootstrap
+COPY --from=builder /app/worker/bootstrap ${LAMBDA_RUNTIME_DIR}
+
+# Set the CMD to your handler
+CMD ["bootstrap"]

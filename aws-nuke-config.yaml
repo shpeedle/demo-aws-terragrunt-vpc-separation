@@ -1,0 +1,17 @@
+regions:
+  - us-east-1
+  - global
+
+account-blocklist:
+  - "999999999999" # production account example
+
+accounts:
+  "268021560912": # your account ID
+    filters:
+      # Preserve IAM user and roles needed for aws-nuke operation
+      IAMUser:
+        - "bsiewert-admin"
+      IAMUserPolicyAttachment:
+        - "bsiewert-admin -> AdministratorAccess"
+      IAMUserAccessKey:
+        - "bsiewert-admin -> AKIAT4Z2UOZIL4JBP75X"

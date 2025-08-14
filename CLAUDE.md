@@ -11,9 +11,10 @@ This is a multi-environment AWS infrastructure project using OpenTofu (Terraform
 
 ## Architecture
 
-### Two-Project Structure
-- **infrastructure/**: Contains VPC and RDS modules deployed per environment (dev/staging/prod)
+### Multi-Project Structure
+- **infrastructure/**: Contains VPC, RDS, and Timestream InfluxDB modules deployed per environment (dev/staging/prod)
 - **lambda-service/**: Contains Lambda module with cross-project dependencies on VPC resources
+- **lambda-cron-service/**: Contains cron-based Lambda service with dependencies on VPC and Timestream InfluxDB
 
 ### Cross-Project Dependencies 
 The Lambda service depends on infrastructure resources through Terragrunt dependencies:
@@ -32,11 +33,12 @@ Each environment has its own VPC with distinct CIDR blocks:
 
 ## Common Commands
 
-### Infrastructure Deployment (VPC + RDS)
+### Infrastructure Deployment (VPC + RDS + Timestream InfluxDB)
 ```bash
-# Single environment deployment (order matters - VPC before RDS)
+# Single environment deployment (order matters - VPC before dependent services)
 cd infrastructure/live/dev/vpc && terragrunt apply
 cd ../rds && terragrunt apply
+cd ../timestream-influxdb && terragrunt apply
 
 # All environments at once
 cd infrastructure && terragrunt run-all apply
@@ -57,6 +59,24 @@ cd live/dev/lambda && terragrunt apply
 # For all environments:
 cd lambda-service && terragrunt run-all apply --terragrunt-include-dir live/*/ecr
 ./scripts/lambda-build-and-deploy.sh dev && ./scripts/lambda-build-and-deploy.sh staging && ./scripts/lambda-build-and-deploy.sh prod
+terragrunt run-all apply --terragrunt-include-dir live/*/lambda
+```
+
+### Lambda Cron Service Deployment (Container-based with InfluxDB)
+```bash
+# Container deployment requires specific order:
+# 1. Deploy ECR repositories
+cd lambda-cron-service/live/dev/ecr && terragrunt apply
+
+# 2. Build and push container images (main and worker)
+cd ../../.. && ./scripts/lambda-cron-build-and-deploy.sh dev
+
+# 3. Deploy Lambda functions (depends on InfluxDB)
+cd live/dev/lambda && terragrunt apply
+
+# For all environments:
+cd lambda-cron-service && terragrunt run-all apply --terragrunt-include-dir live/*/ecr
+./scripts/lambda-cron-build-and-deploy.sh dev && ./scripts/lambda-cron-build-and-deploy.sh staging && ./scripts/lambda-cron-build-and-deploy.sh prod
 terragrunt run-all apply --terragrunt-include-dir live/*/lambda
 ```
 

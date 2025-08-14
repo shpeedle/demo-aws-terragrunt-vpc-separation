@@ -21,16 +21,20 @@ dependency "ecr" {
   
   mock_outputs = {
     repository_url = "123456789012.dkr.ecr.us-east-1.amazonaws.com/staging-lambda-cron-service"
+    worker_repository_url = "123456789012.dkr.ecr.us-east-1.amazonaws.com/staging-lambda-cron-worker"
   }
   mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
 }
 
-dependency "rds" {
-  config_path = "../../../../infrastructure/live/staging/rds"
+dependency "timestream_influxdb" {
+  config_path = "../../../../infrastructure/live/staging/timestream-influxdb"
   
   mock_outputs = {
-    db_instance_address  = "mock-db-address"
-    db_instance_port     = 5432
+    influxdb_url            = "https://mock-endpoint:8086"
+    admin_username          = "admin"
+    organization_name       = "staging-org"
+    bucket_name            = "staging-metrics"
+    credentials_secret_arn  = "arn:aws:secretsmanager:us-east-1:123456789012:secret:staging-credentials"
   }
   mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
 }
@@ -41,20 +45,28 @@ inputs = {
   timeout     = 60
   memory_size = 256
   
-  # ECR image URI - this should be set after building and pushing the image
-  image_uri = "${dependency.ecr.outputs.repository_url}:latest"
+  # Worker configuration
+  worker_timeout     = 120
+  worker_memory_size = 512
+  sqs_batch_size     = 1
+  
+  # ECR image URIs - these should be set after building and pushing the images
+  image_uri        = "${dependency.ecr.outputs.repository_url}:latest"
+  worker_image_uri = "${dependency.ecr.outputs.worker_repository_url}:latest"
+  
+  # InfluxDB secret ARN for IAM permissions
+  influxdb_secret_arn = dependency.timestream_influxdb.outputs.credentials_secret_arn
   
   environment_variables = {
     LOG_LEVEL   = "info"
     NODE_ENV    = "production"
     ENVIRONMENT = "staging"
     
-    # Database connection variables
-    DB_HOST     = dependency.rds.outputs.db_instance_address
-    DB_PORT     = dependency.rds.outputs.db_instance_port
-    DB_NAME     = "stagingdb"
-    DB_USERNAME = "staginguser"
-    DB_PASSWORD = "change-me-staging-password"
+    # InfluxDB connection variables
+    INFLUXDB_URL    = dependency.timestream_influxdb.outputs.influxdb_url
+    INFLUXDB_ORG    = dependency.timestream_influxdb.outputs.organization_name
+    INFLUXDB_BUCKET = dependency.timestream_influxdb.outputs.bucket_name
+    INFLUXDB_SECRET_ARN = dependency.timestream_influxdb.outputs.credentials_secret_arn
   }
   
   vpc_config = {

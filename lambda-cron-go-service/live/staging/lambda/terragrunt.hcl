@@ -7,7 +7,7 @@ terraform {
 }
 
 dependency "vpc" {
-  config_path = "../../../../infrastructure/live/dev/vpc"
+  config_path = "../../../../infrastructure/live/staging/vpc"
   
   mock_outputs = {
     vpc_id             = "vpc-mock"
@@ -20,27 +20,27 @@ dependency "ecr" {
   config_path = "../ecr"
   
   mock_outputs = {
-    repository_url = "123456789012.dkr.ecr.us-east-1.amazonaws.com/dev-lambda-cron-service"
-    worker_repository_url = "123456789012.dkr.ecr.us-east-1.amazonaws.com/dev-lambda-cron-worker"
+    repository_url = "123456789012.dkr.ecr.us-east-1.amazonaws.com/staging-lambda-cron-go-service"
+    worker_repository_url = "123456789012.dkr.ecr.us-east-1.amazonaws.com/staging-lambda-cron-go-worker"
   }
   mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
 }
 
 dependency "timestream_influxdb" {
-  config_path = "../../../../infrastructure/live/dev/timestream-influxdb"
+  config_path = "../../../../infrastructure/live/staging/timestream-influxdb"
   
   mock_outputs = {
     influxdb_url            = "https://mock-endpoint:8086"
     admin_username          = "admin"
-    organization_name       = "dev-org"
-    bucket_name            = "dev-metrics"
-    credentials_secret_arn  = "arn:aws:secretsmanager:us-east-1:123456789012:secret:dev-credentials"
+    organization_name       = "staging-org"
+    bucket_name            = "staging-metrics"
+    credentials_secret_arn  = "arn:aws:secretsmanager:us-east-1:123456789012:secret:staging-credentials"
   }
   mock_outputs_allowed_terraform_commands = ["init", "plan", "validate"]
 }
 
 inputs = {
-  environment = "dev"
+  environment = "staging"
   
   timeout     = 60
   memory_size = 256
@@ -58,9 +58,8 @@ inputs = {
   influxdb_secret_arn = dependency.timestream_influxdb.outputs.credentials_secret_arn
   
   environment_variables = {
-    LOG_LEVEL   = "debug"
-    NODE_ENV    = "development"
-    ENVIRONMENT = "dev"
+    LOG_LEVEL   = "info"
+    ENVIRONMENT = "staging"
     
     # InfluxDB connection variables
     INFLUXDB_URL    = dependency.timestream_influxdb.outputs.influxdb_url

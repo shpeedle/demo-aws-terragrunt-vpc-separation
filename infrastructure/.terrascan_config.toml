@@ -1,0 +1,10 @@
+# Terrascan configuration for AWS Infrastructure
+[rules]
+  # Skip rules that may not apply to this infrastructure
+  skip-rules = [
+    # Add any rules to skip here as needed
+  ]
+
+[severity]
+  # Set minimum severity level (LOW, MEDIUM, HIGH)
+  level = "MEDIUM"

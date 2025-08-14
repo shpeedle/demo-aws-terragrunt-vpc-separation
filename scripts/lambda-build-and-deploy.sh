@@ -20,7 +20,7 @@ ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 REGION=$(aws configure get region || echo "us-east-1")
 
 # ECR repository name
-REPO_NAME="${ENVIRONMENT}-lambda-service"
+REPO_NAME="${ENVIRONMENT}-lambda-cron-service"
 IMAGE_URI="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${REPO_NAME}:${IMAGE_TAG}"
 
 echo "Repository: $REPO_NAME"
@@ -32,7 +32,7 @@ aws ecr get-login-password --region $REGION | docker login --username AWS --pass
 
 # Build Docker image
 echo "Building Docker image..."
-cd lambda-service/src
+cd lambda-cron-service/src
 docker build -t $REPO_NAME:$IMAGE_TAG .
 
 # Tag image for ECR

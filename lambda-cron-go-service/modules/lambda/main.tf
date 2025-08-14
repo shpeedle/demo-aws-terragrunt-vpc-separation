@@ -1,4 +1,4 @@
-# Lambda Cron Service Module with VPC ENI Cleanup
+# Lambda Cron Go Service Module with VPC ENI Cleanup
 #
 # This module includes several measures to prevent Lambda VPC ENI cleanup issues:
 # 1. Extended timeouts (45m) for Lambda function deletion
@@ -208,21 +208,21 @@ resource "aws_lambda_permission" "allow_eventbridge" {
 
 # SQS Queue for work items
 resource "aws_sqs_queue" "work_queue" {
-  name                       = "${var.environment}-work-queue"
+  name                       = "${var.environment}-go-work-queue"
   visibility_timeout_seconds = 300
   message_retention_seconds  = 1209600 # 14 days
 
   tags = {
-    Name = "${var.environment}-work-queue"
+    Name = "${var.environment}-go-work-queue"
   }
 }
 
 # Dead Letter Queue for failed messages
 resource "aws_sqs_queue" "work_queue_dlq" {
-  name = "${var.environment}-work-queue-dlq"
+  name = "${var.environment}-go-work-queue-dlq"
 
   tags = {
-    Name = "${var.environment}-work-queue-dlq"
+    Name = "${var.environment}-go-work-queue-dlq"
   }
 }
 
