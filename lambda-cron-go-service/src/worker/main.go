@@ -11,9 +11,9 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/secretsmanager"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
 )
@@ -60,14 +60,14 @@ func Handler(ctx context.Context, sqsEvent events.SQSEvent) (WorkerResponse, err
 	var influxClient influxdb2.Client
 	var writeAPI api.WriteAPI
 
-	// Initialize AWS session with automatic region detection
-	sess, err := session.NewSession()
+	// Initialize AWS config with automatic region detection
+	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		log.Printf("Failed to create AWS session: %v", err)
-		return createWorkerErrorResponse(fmt.Sprintf("Failed to create AWS session: %v", err), len(sqsEvent.Records)), err
+		log.Printf("Failed to load AWS config: %v", err)
+		return createWorkerErrorResponse(fmt.Sprintf("Failed to load AWS config: %v", err), len(sqsEvent.Records)), err
 	}
 
-	secretsMgr := secretsmanager.New(sess)
+	secretsMgr := secretsmanager.NewFromConfig(cfg)
 
 	defer func() {
 		if writeAPI != nil {
@@ -86,7 +86,7 @@ func Handler(ctx context.Context, sqsEvent events.SQSEvent) (WorkerResponse, err
 		VersionStage: aws.String("AWSCURRENT"),
 	}
 
-	secretResult, err := secretsMgr.GetSecretValue(secretInput)
+	secretResult, err := secretsMgr.GetSecretValue(ctx, secretInput)
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to retrieve secret: %v", err)
 		log.Println(errMsg)
