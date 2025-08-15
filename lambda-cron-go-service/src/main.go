@@ -10,10 +10,11 @@ import (
 	"time"
 
 	"github.com/aws/aws-lambda-go/lambda"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/secretsmanager"
-	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
+	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
 )
@@ -64,14 +65,14 @@ func Handler(ctx context.Context, event interface{}) (CronResponse, error) {
 
 	startTime := time.Now()
 
-	// Initialize AWS session with automatic region detection
-	sess, err := session.NewSession()
+	// Initialize AWS config with automatic region detection
+	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		return createErrorResponse(fmt.Sprintf("Failed to create AWS session: %v", err)), err
+		return createErrorResponse(fmt.Sprintf("Failed to load AWS config: %v", err)), err
 	}
 
-	secretsMgr := secretsmanager.New(sess)
-	sqsClient := sqs.New(sess)
+	secretsMgr := secretsmanager.NewFromConfig(cfg)
+	sqsClient := sqs.NewFromConfig(cfg)
 
 	defer func() {
 		if writeAPI != nil {
@@ -90,7 +91,7 @@ func Handler(ctx context.Context, event interface{}) (CronResponse, error) {
 		VersionStage: aws.String("AWSCURRENT"),
 	}
 
-	secretResult, err := secretsMgr.GetSecretValue(secretInput)
+	secretResult, err := secretsMgr.GetSecretValue(ctx, secretInput)
 	if err != nil {
 		errMsg := fmt.Sprintf("Failed to retrieve secret: %v", err)
 		log.Println(errMsg)
@@ -163,7 +164,7 @@ func Handler(ctx context.Context, event interface{}) (CronResponse, error) {
 		messageParams := &sqs.SendMessageInput{
 			QueueUrl:    aws.String(queueURL),
 			MessageBody: aws.String(string(messageBody)),
-			MessageAttributes: map[string]*sqs.MessageAttributeValue{
+			MessageAttributes: map[string]types.MessageAttributeValue{
 				"workType": {
 					DataType:    aws.String("String"),
 					StringValue: aws.String(item.Type),
@@ -175,7 +176,7 @@ func Handler(ctx context.Context, event interface{}) (CronResponse, error) {
 			},
 		}
 
-		result, err := sqsClient.SendMessage(messageParams)
+		result, err := sqsClient.SendMessage(ctx, messageParams)
 		if err != nil {
 			errMsg := fmt.Sprintf("Failed to send work item %d to SQS: %v", item.ID, err)
 			log.Println(errMsg)
